@@ -1605,3 +1605,40 @@ footer p {
         font-size: 10px;
     }
 }
+/* Mobile header logo and hero logo fix */
+@media (max-width: 500px) {
+    .right-logo {
+        display: flex;
+        width: 48px;
+        height: 48px;
+        flex: 0 0 48px;
+        margin-left: auto;
+    }
+
+    .right-logo img {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+    }
+
+    .navbar {
+        flex-wrap: wrap;
+    }
+
+    .hero-logo {
+        width: 190px;
+        height: 190px;
+        max-width: 100%;
+        object-fit: contain;
+    }
+
+    .shield-circle {
+        width: 210px;
+        height: 210px;
+        flex-shrink: 0;
+    }
+
+    .hero-visual {
+        height: 270px;
+    }
+}
