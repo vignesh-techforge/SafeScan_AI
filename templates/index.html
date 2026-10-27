@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SafeScan AI | Digital Threat Intelligence</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+
+        <div class="brand">
+
+            <div class="right-logo">
+                <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
+                     alt="SafeScan AI Logo">
+            </div>
+
+            <div>
+                <h2>SafeScan AI</h2>
+                <span>Digital Threat Intelligence</span>
+            </div>
+
+        </div>
+
+
+        <div class="nav-links">
+
+            <a href="/">Home</a>
+
+            <a href="/modules">Modules</a>
+
+            <a href="#about">About</a>
+
+        </div>
+
+
+        <!-- RIGHT SIDE LOGO -->
+        <div class="right-logo">
+
+            <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
+                 alt="SafeScan AI Logo">
+
+        </div>
+
+    </nav>
+
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+
+        <div class="hero-content">
+
+            <span class="badge">
+                AI-POWERED DIGITAL SECURITY
+            </span>
+
+
+            <h1>
+                Know What You Trust.
+                <span>Before You Trust It.</span>
+            </h1>
+
+
+            <p>
+                SafeScan AI analyzes emails, URLs, and QR codes using
+                intelligent threat analysis to uncover suspicious signals,
+                technical information, and the reasons behind every result.
+            </p>
+
+
+            <a href="/modules" class="primary-btn">
+
+                Start Analysis
+
+                <span>→</span>
+
+            </a>
+
+        </div>
+
+
+        <div class="hero-visual">
+
+            <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
+                 alt="SafeScan AI Security Logo"
+                 class="hero-logo">
+
+        </div>
+
+
+        <div class="floating-card card-one">
+
+            <span>AI Analysis</span>
+
+            <strong>Active</strong>
+
+        </div>
+
+
+        <div class="floating-card card-two">
+
+            <span>Threat Intelligence</span>
+
+            <strong>Ready</strong>
+
+        </div>
+
+    </section>
+
+
+    <!-- ABOUT SECTION -->
+    <section class="about" id="about">
+
+        <div class="about-content">
+
+            <span class="section-label">
+                WHY SAFESCAN
+            </span>
+
+
+            <h2>
+                Analysis Before Verdict
+            </h2>
+
+
+            <p>
+                SafeScan AI does not simply provide a result.
+                It presents the available information, analyzes
+                important indicators, explains why they matter,
+                and places the final verdict at the end.
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- FOOTER -->
+    <footer>
+
+        <div class="watermark">
+
+            <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
+                 alt="SafeScan AI">
+
+
+            <div class="copyright">
+
+                © 2026 SafeScan AI.
+                AI-Powered Digital Threat Intelligence.
+
+            </div>
+
+
+            <div class="terms-link">
+
+                <a href="{{ url_for('terms_privacy') }}">
+                    Terms & Privacy
+                </a>
+
+            </div>
+
+        </div>
+
+    </footer>
+
+
+    <!-- JAVASCRIPT -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+</body>
+
+</html>

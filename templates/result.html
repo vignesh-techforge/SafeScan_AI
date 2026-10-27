@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeScan AI - Analysis Result</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+<nav class="navbar">
+
+    <div class="brand">
+
+        <div class="right-logo">
+            <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
+                 alt="SafeScan AI Logo">
+        </div>
+
+        <span>SafeScan AI</span>
+
+    </div>
+
+    <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/mailguard">MailGuard</a>
+        <a href="/urlshield">URLShield</a>
+        <a href="/qrshield">QRShield</a>
+        <a href="#about">About</a>
+    </div>
+
+</nav>
+
+
+<main class="result-page">
+
+    <div class="result-container">
+
+        <h1>Analysis Result</h1>
+
+        <p class="result-subtitle">
+            SafeScan AI has completed the security analysis.
+        </p>
+
+
+        <!-- SUBMITTED INFORMATION -->
+
+        <section class="result-card">
+
+            <h2>Submitted Information</h2>
+
+            <div class="metadata-grid">
+
+                <div class="metadata-item">
+                    <span>Module</span>
+                    <strong>{{ module }}</strong>
+                </div>
+
+                <div class="metadata-item">
+                    <span>Verdict</span>
+                    <strong>{{ analysis["verdict"] }}</strong>
+                </div>
+
+                {% if analysis.get("metadata", {}).get("Submitted URL") %}
+
+                <div class="metadata-item">
+                    <span>Submitted URL</span>
+                    <strong>
+                        {{ analysis["metadata"]["Submitted URL"] }}
+                    </strong>
+                </div>
+
+                {% endif %}
+
+            </div>
+
+        </section>
+
+
+        <!-- ORIGIN & IDENTITY -->
+
+        <section class="result-card">
+
+            <h2>Origin &amp; Identity</h2>
+
+            {% set metadata = analysis.get("metadata", {}) %}
+
+            {% set origin_fields = [
+                "Original Domain",
+                "Final Domain",
+                "Domain Creation Date",
+                "Domain Expiry Date",
+                "Domain Last Updated",
+                "Domain Registrar",
+                "Domain Status",
+                "Nameservers",
+                "Claimed Organization",
+                "Expected Official Domain",
+                "Organization Verification",
+                "IP RDAP Organization",
+                "IP RDAP ASN",
+                "Reverse DNS",
+                "Resolved IPv4",
+                "Resolved IPv6",
+                "Approximate Server Country",
+                "Approximate Server Region",
+                "Approximate Server City",
+                "Server ISP",
+                "Server Network Organization",
+                "Server Location Source"
+            ] %}
+
+            {% set origin_found = false %}
+
+            {% for field in origin_fields %}
+
+                {% if metadata.get(field) is not none
+                      and metadata.get(field) != ""
+                      and metadata.get(field) != "Not Available" %}
+
+                    {% set origin_found = true %}
+
+                    <div class="metadata-item">
+                        <span>{{ field }}</span>
+                        <strong>
+                            {{ metadata.get(field) }}
+                        </strong>
+                    </div>
+
+                {% endif %}
+
+            {% endfor %}
+
+            {% if not origin_found %}
+
+                <div class="finding">
+                    No additional origin or identity information available.
+                </div>
+
+            {% endif %}
+
+        </section>
+
+
+        <!-- TECHNICAL INFORMATION -->
+
+        <section class="result-card">
+
+            <h2>Technical Information</h2>
+
+            {% set technical_fields = [
+                "Protocol",
+                "Hostname",
+                "Port",
+                "Path",
+                "Query Parameter Count",
+                "URL Length",
+                "Decoded URL",
+                "IP Address URL",
+                "Username in URL",
+                "Password in URL",
+                "Punycode / IDN Present",
+                "HTTP Status",
+                "Connection Status",
+                "Final URL",
+                "Redirect Count",
+                "Redirect Chain",
+                "Page Title",
+                "SSL Available",
+                "SSL Issuer",
+                "SSL Subject",
+                "SSL Valid From",
+                "SSL Valid Until",
+                "SSL SANs",
+                "SSL Status",
+                "Meta Description",
+                "Meta Keywords",
+                "Meta Author",
+                "Meta Publisher",
+                "Web Page Created Date",
+                "Web Page Published Date",
+                "Web Page Modified Date",
+                "Canonical URL",
+                "Robots Directive",
+                "Language",
+                "Character Encoding",
+                "Sitemap Reference",
+                "Forms Detected",
+                "Password Fields",
+                "Iframes Detected",
+                "External Links",
+                "Internal Links",
+                "Images Detected",
+                "Scripts Detected",
+                "Security Headers",
+                "Technology Indicators",
+                "Typosquatting Check"
+            ] %}
+
+            {% set technical_found = false %}
+
+            {% for field in technical_fields %}
+
+                {% if metadata.get(field) is not none
+                      and metadata.get(field) != ""
+                      and metadata.get(field) != "Not Available" %}
+
+                    {% set technical_found = true %}
+
+                    <div class="metadata-item">
+
+                        <span>{{ field }}</span>
+
+                        <strong>
+                            {{ metadata.get(field) }}
+                        </strong>
+
+                    </div>
+
+                {% endif %}
+
+            {% endfor %}
+
+
+            {% if not technical_found %}
+
+                <div class="finding">
+                    No additional technical information available.
+                </div>
+
+            {% endif %}
+
+        </section>
+
+
+        <!-- ALL OTHER TECHNICAL DATA -->
+
+        <section class="result-card">
+
+            <h2>Additional Analysis Details</h2>
+
+            {% set displayed_fields = origin_fields + technical_fields %}
+
+            {% set additional_found = false %}
+
+            {% for key, value in metadata.items() %}
+
+                {% if key not in displayed_fields
+                      and value is not none
+                      and value != ""
+                      and value != "Not Available" %}
+
+                    {% set additional_found = true %}
+
+                    <div class="metadata-item">
+
+                        <span>{{ key }}</span>
+
+                        <strong>
+                            {{ value }}
+                        </strong>
+
+                    </div>
+
+                {% endif %}
+
+            {% endfor %}
+
+
+            {% if not additional_found %}
+
+                <div class="finding">
+                    No additional analysis details available.
+                </div>
+
+            {% endif %}
+
+        </section>
+
+
+        <!-- EVIDENCE -->
+
+        <section class="result-card">
+
+            <h2>Evidence Found</h2>
+
+            {% if analysis.get("findings") %}
+
+                {% for item in analysis.get("findings") %}
+
+                    <div class="finding">
+                        {{ item }}
+                    </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="finding">
+                    No additional evidence was found.
+                </div>
+
+            {% endif %}
+
+        </section>
+
+
+        <!-- WHY THIS MATTERS -->
+
+        <section class="result-card">
+
+            <h2>Why This Matters</h2>
+
+            {% if analysis.get("reason") %}
+
+                <div class="finding">
+                    {{ analysis.get("reason") }}
+                </div>
+
+            {% else %}
+
+                <div class="finding">
+                    The available evidence is presented above.
+                </div>
+
+            {% endif %}
+
+        </section>
+
+
+        <!-- FINAL VERDICT -->
+
+  <section class="verdict-card final-verdict-card">
+
+    <div class="final-verdict-label">
+        FINAL SECURITY VERDICT
+    </div>
+
+    <h2>
+        {{ analysis.get("verdict", "Unable to Verify") }}
+    </h2>
+
+    <div class="final-verdict-line"></div>
+
+    <p class="final-verdict-reason">
+        {{ analysis.get("reason", "The analysis has been completed based on the available technical evidence.") }}
+    </p>
+
+</section>
+
+
+        <!-- BACK TO HOME -->
+
+        <div class="result-actions">
+
+            <a href="/" class="primary-btn">
+                Back to Home
+            </a>
+
+        </div>
+
+    </div>
+
+</main>
+
+
+<footer class="result-footer">
+
+    <div class="watermark">
+
+        <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
+             alt="SafeScan AI">
+
+        <p>SAFESCAN AI</p>
+
+    </div>
+
+</footer>
+
+
+<!-- FEEDBACK MODAL -->
+
+<div id="feedbackModal" class="feedback-modal">
+
+    <div class="feedback-overlay"></div>
+
+    <div class="feedback-box">
+
+        <button type="button"
+                class="feedback-close"
+                id="feedbackClose">
+            &times;
+        </button>
+
+
+        <img class="feedback-logo"
+             src="{{ url_for('static', filename='images/safescan-logo.png') }}"
+             alt="SafeScan AI">
+
+
+        <h2>How was your experience?</h2>
+
+        <p class="feedback-label">
+            Please rate your SafeScan AI experience.
+        </p>
+
+
+        <form id="feedbackForm">
+
+            <input type="hidden"
+                   name="module"
+                   value="{{ module }}">
+
+
+            <input type="hidden"
+                   name="verdict"
+                   value="{{ analysis['verdict'] }}">
+
+
+            <input type="hidden"
+                   id="selectedRating"
+                   name="rating"
+                   value="">
+
+
+            <div class="star-rating">
+
+                <button type="button"
+                        class="star"
+                        data-rating="1">
+                    ★
+                </button>
+
+                <button type="button"
+                        class="star"
+                        data-rating="2">
+                    ★
+                </button>
+
+                <button type="button"
+                        class="star"
+                        data-rating="3">
+                    ★
+                </button>
+
+                <button type="button"
+                        class="star"
+                        data-rating="4">
+                    ★
+                </button>
+
+                <button type="button"
+                        class="star"
+                        data-rating="5">
+                    ★
+                </button>
+
+            </div>
+
+
+            <textarea name="feedback_text"
+                      placeholder="Tell us your feedback..."
+                      rows="4"></textarea>
+
+
+            <button type="submit"
+                    class="feedback-submit">
+                Submit Feedback
+            </button>
+
+        </form>
+
+
+        <button type="button"
+                class="feedback-later"
+                id="feedbackLater">
+            Maybe Later
+        </button>
+
+
+        <p id="feedbackMessage"></p>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const feedbackModal =
+    document.getElementById("feedbackModal");
+
+const backHomeButton =
+    document.querySelector(".result-actions a");
+
+const feedbackClose =
+    document.getElementById("feedbackClose");
+
+const feedbackLater =
+    document.getElementById("feedbackLater");
+
+const feedbackForm =
+    document.getElementById("feedbackForm");
+
+const selectedRating =
+    document.getElementById("selectedRating");
+
+const feedbackMessage =
+    document.getElementById("feedbackMessage");
+
+const feedbackText =
+    document.querySelector(
+        'textarea[name="feedback_text"]'
+    );
+
+const feedbackSubmit =
+    document.querySelector(".feedback-submit");
+
+const stars =
+    document.querySelectorAll(
+        ".star-rating .star"
+    );
+
+
+function showFeedback() {
+
+    feedbackModal.classList.add("active");
+
+}
+
+
+stars.forEach(function(star) {
+
+    star.addEventListener("click", function() {
+
+        const rating =
+            Number(this.dataset.rating);
+
+        selectedRating.value = rating;
+
+
+        stars.forEach(function(item) {
+
+            const itemRating =
+                Number(item.dataset.rating);
+
+            if (itemRating <= rating) {
+
+                item.classList.add("selected");
+
+            } else {
+
+                item.classList.remove("selected");
+
+            }
+
+        });
+
+
+        if (rating < 4) {
+
+            feedbackText.style.display = "block";
+
+            feedbackSubmit.style.display = "block";
+
+            feedbackSubmit.textContent =
+                "Submit Feedback";
+
+        } else {
+
+            feedbackText.style.display = "none";
+
+            feedbackSubmit.style.display = "block";
+
+            feedbackSubmit.textContent =
+                "Submit Rating";
+
+        }
+
+    });
+
+});
+
+
+backHomeButton.addEventListener(
+    "click",
+    function(event) {
+
+        event.preventDefault();
+
+        showFeedback();
+
+    }
+);
+
+
+history.pushState(
+    { feedbackGuard: true },
+    "",
+    window.location.href
+);
+
+
+window.addEventListener(
+    "popstate",
+    function() {
+
+        showFeedback();
+
+        history.pushState(
+            { feedbackGuard: true },
+            "",
+            window.location.href
+        );
+
+    }
+);
+
+
+feedbackClose.addEventListener(
+    "click",
+    function() {
+
+        feedbackModal.classList.remove("active");
+
+    }
+);
+
+
+document
+    .querySelector(".feedback-overlay")
+    .addEventListener(
+        "click",
+        function() {
+
+            feedbackModal.classList.remove("active");
+
+        }
+    );
+
+
+feedbackLater.addEventListener(
+    "click",
+    function() {
+
+        window.location.href = "/";
+
+    }
+);
+
+
+feedbackForm.addEventListener(
+    "submit",
+    async function(event) {
+
+        event.preventDefault();
+
+
+        if (!selectedRating.value) {
+
+            feedbackMessage.textContent =
+                "Please select a star rating.";
+
+            return;
+
+        }
+
+
+        const formData =
+            new FormData(feedbackForm);
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "/submit-feedback",
+                    {
+                        method: "POST",
+                        body: formData
+                    }
+                );
+
+
+            if (response.ok) {
+
+                feedbackMessage.textContent =
+                    "Thank you for your feedback!";
+
+
+                setTimeout(
+                    function() {
+
+                        window.location.href = "/";
+
+                    },
+                    1200
+                );
+
+            } else {
+
+                feedbackMessage.textContent =
+                    "Unable to submit feedback.";
+
+            }
+
+        } catch (error) {
+
+            feedbackMessage.textContent =
+                "Unable to submit feedback.";
+
+        }
+
+    }
+);
+
+</script>
+
+</body>
+</html>

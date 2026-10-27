@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeScan AI - Admin Login</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <main class="result-page">
+        <div class="result-container">
+            <section class="result-card">
+                <h1>Admin Access</h1>
+                <p class="result-subtitle">
+                    SafeScan AI Feedback Management
+                </p>
+                <form method="POST">
+                    <div class="finding">
+                        <label>Username</label>
+                        <input type="text"
+                               name="username"
+                               required>
+                    </div>
+                    <div class="finding">
+                        <label>Password</label>
+                        <div class="password-field">
+    <input type="password"
+           id="adminPassword"
+           name="password"
+           placeholder="Enter password"
+           required>
+
+    <button type="button"
+            id="togglePassword"
+            aria-label="Show password"
+            title="Show password">
+        👁
+    </button>
+</div>
+
+<script>
+document.getElementById("togglePassword").addEventListener("click", function () {
+    const password = document.getElementById("adminPassword");
+    const isHidden = password.type === "password";
+
+    password.type = isHidden ? "text" : "password";
+    this.textContent = isHidden ? "🙈" : "👁";
+    this.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+    this.title = isHidden ? "Hide password" : "Show password";
+});
+</script>
+                    </div>
+                    {% if error %}
+                    <div class="finding">
+                        {{ error }}
+                    </div>
+                    {% endif %}
+                    <div class="result-actions">
+                        <button type="submit" class="primary-btn">
+                            Login
+                        </button>
+                        <a href="/" class="primary-btn">
+                            Back to Home
+                        </a>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </main>
+</body>
+</html>			

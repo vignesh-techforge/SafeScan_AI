@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeScan AI - Public Reviews</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <main class="result-page">
+        <div class="result-container">
+            <h1>User Feedback</h1>
+            <p class="result-subtitle">
+                SafeScan AI user ratings and feedback
+            </p>
+
+            {% for item in feedback %}
+            <section class="result-card">
+                <div class="metadata-grid">
+                    <div class="metadata-item">
+                        <span>Module</span>
+                        <strong>{{ item["module"] }}</strong>
+                    </div>
+                    <div class="metadata-item">
+                        <span>Verdict</span>
+                        <strong>{{ item["verdict"] }}</strong>
+                    </div>
+                    <div class="metadata-item">
+                        <span>Rating</span>
+                        <strong>{{ "⭐" * item["rating"] }}</strong>
+                    </div>
+                    <div class="metadata-item">
+                        <span>Created</span>
+                        <strong>{{ item["created_at"] }}</strong>
+                    </div>
+                </div>
+
+                <div class="finding">
+                    <strong>Feedback:</strong>
+                    {{ item["feedback_text"] or "No feedback provided" }}
+                </div>
+            </section>
+            {% else %}
+            <section class="result-card">
+                <div class="finding">
+                    No feedback has been submitted yet.
+                </div>
+            </section>
+            {% endfor %}
+
+            <div class="result-actions">
+                <a href="/" class="primary-btn">Back to Home</a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

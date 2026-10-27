@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeScan AI - Feedback History</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <main class="result-page feedback-history-page">
+        <div class="result-container">
+            <h1>Feedback History</h1>
+
+            <p class="result-subtitle">
+                SafeScan AI user feedback records
+            </p>
+
+            {% for item in feedback %}
+            <section class="result-card">
+                <div class="metadata-grid">
+                    <div class="metadata-item">
+                        <span>Module</span>
+                        <strong>{{ item["module"] }}</strong>
+                    </div>
+
+                    <div class="metadata-item">
+                        <span>Verdict</span>
+                        <strong>{{ item["verdict"] }}</strong>
+                    </div>
+
+                    <div class="metadata-item">
+                        <span>Rating</span>
+                        <strong>{{ "⭐" * item["rating"] }}</strong>
+                    </div>
+
+                    <div class="metadata-item">
+                        <span>Created</span>
+                        <strong>{{ item["created_at"] }}</strong>
+                    </div>
+                </div>
+
+                <div class="finding feedback-history-text">
+    <strong>Feedback:</strong>
+    <p>{{ item["feedback_text"] or "No feedback provided" }}</p>
+</div>
+
+                <form method="POST"
+                      action="{{ url_for('delete_feedback', feedback_id=item['id']) }}"
+                      onsubmit="return confirm('Delete this review permanently?');">
+                    <button type="submit" class="primary-btn">
+                        Delete Review
+                    </button>
+                </form>
+            </section>
+            {% else %}
+            <section class="result-card">
+                <div class="finding">
+                    No feedback has been submitted yet.
+                </div>
+            </section>
+            {% endfor %}
+
+           <div class="feedback-bottom-actions">
+    <a href="/" class="primary-btn">
+        Back to Home
+    </a>
+
+    <div class="delete-all-actions">
+        <form method="POST"
+              action="{{ url_for('delete_all_feedback') }}"
+              onsubmit="return confirm('Delete ALL reviews and ratings permanently?');">
+            <button type="submit" class="primary-btn">
+                Delete All Reviews
+            </button>
+        </form>
+    </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MailGuard AI | SafeScan AI</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<nav class="navbar">
+    <div class="brand">
+        <div class="right-logo">
+            <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
+                 alt="SafeScan AI Logo">
+        </div>
+        <div>
+            <h2>SafeScan AI</h2>
+            <span>Digital Threat Intelligence</span>
+        </div>
+    </div>
+    <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/urlshield">URLShield</a>
+        <a href="/qrshield">QRShield</a>
+    </div>
+</nav>
+<section class="analysis-page">
+    <div class="analysis-header">
+        <span class="section-label">
+            MAILGUARD AI
+        </span>
+        <h1>
+            Analyze Suspicious Messages
+        </h1>
+        <p>
+            Submit an email or message. Safecan AI examines
+            the available sender information, links, origin signals,
+            and technical evidence before presenting a conclusion.
+        </p>
+    </div>
+    <form method="POST"
+          class="analysis-form">
+        <label>
+            Email or Message
+        </label>
+        <textarea
+            name="email_text"
+            placeholder="Paste the complete email or message here..."
+            required></textarea>
+        <button type="submit"
+                class="primary-btn">
+            Analyze Message →
+        </button>
+    </form>
+</section>
+<footer>
+    <div class="watermark">
+            <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
+                 alt="SafeScan AI ">
+             <span>SAFESCAN AI</span>
+        </div>
+    <p>
+        AI-Powered Digital Threat Intelligence
+    </p>
+</footer>
+</body>
+</html>

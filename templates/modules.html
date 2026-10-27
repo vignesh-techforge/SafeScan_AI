@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SafeScan AI | Security Modules</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+
+        <div class="brand">
+
+            <div class="right-logo">
+
+                <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
+                     alt="SafeScan AI Logo">
+
+            </div>
+
+            <div>
+
+                <h2>SafeScan AI</h2>
+
+                <span>
+                    Digital Threat Intelligence
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="nav-links">
+
+            <a href="/">
+                Home
+            </a>
+
+            <a href="/modules">
+                Modules
+            </a>
+
+            <a href="/#about">
+                About
+            </a>
+
+        </div>
+
+
+        <!-- RIGHT SIDE LOGO -->
+        <div class="right-logo">
+
+            <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
+                 alt="SafeScan AI Logo">
+
+        </div>
+
+    </nav>
+
+
+    <!-- MODULES PAGE -->
+    <main class="modules-page">
+
+        <div class="section-heading">
+
+            <span class="section-label">
+                SECURITY MODULES
+            </span>
+
+            <h1>
+                Analyze Before You Trust
+            </h1>
+
+            <p>
+                Choose the source you want to analyze using
+                SafeScan AI's security modules.
+            </p>
+
+        </div>
+
+
+        <!-- MODULE CARDS -->
+        <div class="module-grid">
+
+
+            <!-- MAILGUARD AI -->
+            <div class="module-card">
+
+                <div class="module-icon">
+                    ✉️
+                </div>
+
+                <h3>
+                    MailGuard AI
+                </h3>
+
+                <p>
+                    Analyze suspicious emails and messages to identify
+                    phishing patterns, sender inconsistencies, and
+                    suspicious links.
+                </p>
+
+                <a href="/mailguard" class="module-btn">
+                    Analyze Email →
+                </a>
+
+            </div>
+
+
+            <!-- URLSHIELD AI -->
+            <div class="module-card">
+
+                <div class="module-icon">
+                    🔗
+                </div>
+
+                <h3>
+                    URLShield AI
+                </h3>
+
+                <p>
+                    Examine URLs, domains, redirects, and technical
+                    information to identify potentially dangerous
+                    destinations.
+                </p>
+
+                <a href="/urlshield" class="module-btn">
+                    Analyze URL →
+                </a>
+
+            </div>
+
+
+            <!-- QRSHIELD AI -->
+            <div class="module-card">
+
+                <div class="module-icon">
+                    📱
+                </div>
+
+                <h3>
+                    QRShield AI
+                </h3>
+
+                <p>
+                    Scan QR codes safely, reveal hidden destinations,
+                    analyze the extracted content, and understand
+                    potential risks.
+                </p>
+
+                <a href="/qrshield" class="module-btn">
+                    Scan QR →
+                </a>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- BACK TO HOME -->
+        <div class="modules-back">
+
+            <a href="/" class="primary-btn">
+                ← Back to Home
+            </a>
+
+        </div>
+
+    </main>
+
+
+    <!-- JAVASCRIPT -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+</body>
+
+</html>

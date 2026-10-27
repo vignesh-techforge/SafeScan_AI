@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URLShield AI | SafeScan AI</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<nav class="navbar">
+    <div class="brand">
+        <div class="right-logo">
+            <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
+                 alt="SafeScan AI Logo">
+        </div>
+        <div>
+            <h2>SafeScan AI</h2>
+            <span>Digital Threat Intelligence</span>
+        </div>
+    </div>
+    <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/mailguard">MailGuard</a>
+        <a href="/qrshield">QRShield</a>
+    </div>
+</nav>
+<section class="analysis-page">
+    <div class="analysis-header">
+        <span class="section-label">
+            URLSHIELD AI
+        </span>
+        <h1>
+            Investigate a Website
+        </h1>
+        <p>
+            Enter a URL to investigate its domain identity,
+            destination, redirects, HTTPS certificate and
+            available technical evidence.
+        </p>
+    </div>
+    <form method="POST"
+          class="analysis-form">
+        <label>
+            Website URL
+        </label>
+        <input
+            type="text"
+            name="url"
+            placeholder="https://example.com"
+            required>
+        <button type="submit"
+                class="primary-btn">
+            Investigate URL →
+        </button>
+    </form>
+</section>
+<footer>
+    <div class="watermark">
+            <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
+                 alt="SafeScan AI ">
+             <span>SAFESCAN AI</span>
+        </div>
+    <p>
+        Evidence-Based Digital Threat Intelligence
+    </p>
+</footer>
+</body>
+</html>
