@@ -1359,7 +1359,10 @@ def qrshield():
             if image is None:
                 raise ValueError("QR image could not be read.")
 
-            decoded_data, points, _ = detector.detectAndDecode(image)
+            decoded_data = request.form.get("qr_payload", "").strip()
+
+            if not decoded_data:
+                decoded_data, points, _ = detector.detectAndDecode(image)
 
             if not decoded_data:
                 analysis = {

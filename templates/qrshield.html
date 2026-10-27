@@ -2,12 +2,65 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QRShield AI | SafeScan AI</title>
+
     <link rel="stylesheet"
           href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        .qr-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+            margin-top: 30px;
+        }
+
+        .qr-option {
+            min-width: 0;
+            padding: 24px;
+            border: 1px solid rgba(128,128,128,.3);
+            border-radius: 12px;
+        }
+
+        .qr-option h2 { margin-top: 0; }
+        .qr-option p { line-height: 1.6; }
+
+        .qr-option input[type="file"] {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            margin: 18px 0;
+        }
+
+        .camera-preview {
+            display: none;
+            margin-top: 18px;
+        }
+
+        .camera-preview video {
+            width: 100%;
+            max-height: 350px;
+            display: block;
+            background: #111;
+            border-radius: 10px;
+            object-fit: contain;
+        }
+
+        .camera-status {
+            margin-top: 12px;
+            font-size: 14px;
+            overflow-wrap: anywhere;
+        }
+
+        #cameraCanvas { display: none; }
+
+        @media (max-width: 600px) {
+            .qr-option { padding: 18px; }
+        }
+    </style>
 </head>
+
 <body>
 <nav class="navbar">
     <div class="brand">
@@ -16,71 +69,309 @@
                  alt="SafeScan AI Logo">
         </div>
         <div>
-            <h2>
-                SafeScan AI
-            </h2>
-            <span>
-                Digital Threat Intelligence
-            </span>
+            <h2>SafeScan AI</h2>
+            <span>Digital Threat Intelligence</span>
         </div>
     </div>
-    <div class="nav-links">
-        <a href="/">
-            Home
-        </a>
-        <a href="/mailguard">
-            MailGuard
-        </a>
-        <a href="/urlshield">
-            URLShield
-        </a>
 
-        <a href="/qrshield">
-            QRShield
-        </a>
+    <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/mailguard">MailGuard</a>
+        <a href="/urlshield">URLShield</a>
+        <a href="/qrshield">QRShield</a>
     </div>
 </nav>
+
 <section class="analysis-page">
     <div class="analysis-header">
-        <span class="section-label">
-            QRSHIELD AI
-        </span>
-        <h1>
-            Investigate a QR Code
-        </h1>
+        <span class="section-label">QRSHIELD AI</span>
+        <h1>Investigate a QR Code</h1>
         <p>
-            Upload a QR code image. SafeScan AI extracts
-            the hidden destination and investigates its
-            domain, identity, redirects and technical evidence
-            before presenting a conclusion.
+            Scan a QR code using your camera or upload an image.
+            SafeScan AI examines decoded content and investigates
+            its destination and available technical evidence.
         </p>
     </div>
-    <form method="POST"
-          enctype="multipart/form-data"
-          class="analysis-form">
-        <label>
-            Select QR Code Image
-        </label>
-        <input
-            type="file"
-            name="qr_file"
-            accept="image/png,image/jpeg,image/jpg"
-            required>
-        <button type="submit"
-                class="primary-btn">
-            Investigate QR Code →
-        </button>
-    </form>
+
+    <div class="qr-options">
+        <div class="qr-option">
+            <h2>Scan with Camera</h2>
+            <p>
+                Start the camera and point it at a QR code.
+                Scanning and analysis start automatically when detected.
+            </p>
+
+            <button type="button" id="startCamera" class="primary-btn">
+                Start Camera
+            </button>
+
+            <div id="cameraPreview" class="camera-preview">
+                <video id="cameraVideo" autoplay playsinline muted></video>
+
+                <p id="cameraStatus" class="camera-status" aria-live="polite">
+                    Preparing camera...
+                </p>
+
+                <button type="button" id="stopCamera" class="primary-btn">
+                    Stop Camera
+                </button>
+            </div>
+
+            <canvas id="cameraCanvas"></canvas>
+        </div>
+
+        <div class="qr-option">
+            <h2>Upload QR Image</h2>
+            <p>
+                Select a QR code image from your device and click
+                Investigate QR Code to start analysis.
+            </p>
+
+            <form method="POST"
+                  action="{{ url_for('qrshield') }}"
+                  enctype="multipart/form-data"
+                  class="analysis-form"
+                  id="uploadForm">
+
+                <label for="qrFile">Select QR Code Image</label>
+
+                <input type="file"
+                       id="qrFile"
+                       name="qr_file"
+                       accept="image/png,image/jpeg,image/webp,image/bmp"
+                       required>
+
+                <button type="submit" class="primary-btn" id="uploadButton">
+                    Investigate QR Code →
+                </button>
+            </form>
+        </div>
+    </div>
 </section>
+
+<form id="cameraUploadForm"
+      method="POST"
+      action="{{ url_for('qrshield') }}"
+      enctype="multipart/form-data"
+      hidden>
+
+    <input type="file" name="qr_file" id="cameraFile">
+    <input type="hidden" name="qr_payload" id="qrPayload">
+</form>
+
 <footer>
     <div class="watermark">
-            <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
-                 alt="SafeScan AI ">
-             <span>SAFESCAN AI</span>
-        </div>
-    <p>
-        Evidence-Based Digital Threat Intelligence
-    </p>
+        <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
+             alt="SafeScan AI">
+        <span>SAFESCAN AI</span>
+    </div>
+    <p>Evidence-Based Digital Threat Intelligence</p>
 </footer>
+
+<script src="https://unpkg.com/qr-scanner@1.4.2/qr-scanner.legacy.min.js"></script>
+
+<script>
+(() => {
+    const startButton = document.getElementById("startCamera");
+    const stopButton = document.getElementById("stopCamera");
+    const preview = document.getElementById("cameraPreview");
+    const video = document.getElementById("cameraVideo");
+    const status = document.getElementById("cameraStatus");
+    const cameraFile = document.getElementById("cameraFile");
+    const cameraForm = document.getElementById("cameraUploadForm");
+    const uploadForm = document.getElementById("uploadForm");
+    const uploadButton = document.getElementById("uploadButton");
+    const qrPayload = document.getElementById("qrPayload");
+    const canvas = document.getElementById("cameraCanvas");
+
+    let scanner = null;
+    let processing = false;
+
+    function stopScanner() {
+        if (scanner) {
+            const activeScanner = scanner;
+            scanner = null;
+
+            try {
+                activeScanner.stop();
+                activeScanner.destroy();
+            } catch (error) {
+                console.error("Scanner cleanup:", error);
+            }
+        }
+
+        video.srcObject = null;
+        preview.style.display = "none";
+        startButton.disabled = false;
+        startButton.textContent = "Start Camera";
+    }
+
+    stopButton.addEventListener("click", () => {
+        stopScanner();
+        processing = false;
+        status.textContent = "Camera stopped.";
+    });
+
+    async function startCamera() {
+        if (!window.QrScanner) {
+            preview.style.display = "block";
+            status.textContent =
+                "Scanner library failed to load. Check internet and refresh.";
+            return;
+        }
+
+        if (!navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia) {
+            preview.style.display = "block";
+            status.textContent =
+                "Camera access requires localhost or HTTPS.";
+            return;
+        }
+
+        processing = false;
+        startButton.disabled = true;
+        preview.style.display = "block";
+        status.textContent = "Opening camera...";
+
+        try {
+            scanner = new QrScanner(
+                video,
+                result => {
+                    const qrText = typeof result === "string"
+                        ? result
+                        : result && result.data;
+
+                    if (processing || !qrText) return;
+
+                    processing = true;
+                    status.textContent =
+                        "QR detected. Preparing analysis...";
+
+                    if (scanner) scanner.stop();
+
+                    // Pass the scanner's decoded text directly to Flask.
+                    qrPayload.value = qrText;
+
+                    // The decoded payload is authoritative; frame is optional.
+                    const submitScan = () => {
+                        status.textContent =
+                            "QR detected. Submitting for analysis...";
+                        stopScanner();
+                        cameraForm.requestSubmit();
+                    };
+
+                    if (!video.videoWidth || !video.videoHeight) {
+                        submitScan();
+                        return;
+                    }
+
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+
+                    const context = canvas.getContext("2d");
+
+                    if (!context) {
+                        submitScan();
+                        return;
+                    }
+
+                    context.drawImage(
+                        video, 0, 0, canvas.width, canvas.height
+                    );
+
+                    canvas.toBlob(blob => {
+                        if (blob) {
+                            try {
+                                const file = new File(
+                                    [blob],
+                                    "camera_qr_scan.jpg",
+                                    { type: "image/jpeg" }
+                                );
+
+                                const transfer = new DataTransfer();
+                                transfer.items.add(file);
+                                cameraFile.files = transfer.files;
+                            } catch (error) {
+                                console.warn(
+                                    "Optional camera frame unavailable:", error
+                                );
+                            }
+                        }
+
+                        submitScan();
+                    }, "image/jpeg", 0.92);
+                },
+                {
+                    preferredCamera: "environment",
+                    maxScansPerSecond: 15,
+                    returnDetailedScanResult: true,
+                    highlightScanRegion: true,
+                    highlightCodeOutline: true,
+                    calculateScanRegion: videoElement => {
+                        const width = videoElement.videoWidth || 640;
+                        const height = videoElement.videoHeight || 480;
+                        const scale = Math.min(
+                            1, 800 / Math.max(width, height)
+                        );
+
+                        return {
+                            x: 0,
+                            y: 0,
+                            width,
+                            height,
+                            downScaledWidth: Math.max(
+                                1, Math.round(width * scale)
+                            ),
+                            downScaledHeight: Math.max(
+                                1, Math.round(height * scale)
+                            )
+                        };
+                    }
+                }
+            );
+
+            scanner.setInversionMode("both");
+            await scanner.start();
+
+            status.textContent =
+                "Point your camera at a QR code. Scanning automatically...";
+        } catch (error) {
+            console.error("Camera startup error:", error);
+            stopScanner();
+            preview.style.display = "block";
+            status.textContent =
+                "Camera could not start. Check camera permission and browser settings.";
+        }
+    }
+
+    startButton.addEventListener("click", startCamera);
+
+    uploadForm.addEventListener("submit", event => {
+        const fileInput = document.getElementById("qrFile");
+
+        if (!fileInput.files || !fileInput.files.length) {
+            event.preventDefault();
+            alert("Please select a QR code image.");
+            return;
+        }
+
+        if (uploadButton) {
+            uploadButton.disabled = true;
+            uploadButton.textContent = "Investigating...";
+        }
+    });
+
+    window.addEventListener("pagehide", () => {
+        if (scanner) {
+            try {
+                scanner.destroy();
+            } catch (error) {
+                console.error("Scanner cleanup:", error);
+            }
+            scanner = null;
+        }
+    });
+})();
+</script>
 </body>
 </html>
