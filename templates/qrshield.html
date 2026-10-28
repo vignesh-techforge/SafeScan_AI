@@ -159,6 +159,21 @@
     <input type="hidden" name="qr_payload" id="qrPayload">
 </form>
 
+
+<section class="public-rating-summary">
+    <h2>Public Ratings &amp; Reviews</h2>
+    <div class="public-rating-stars" aria-label="Public rating stars">★★★★★</div>
+    <p data-ratings-summary class="public-rating-meta">Loading public rating...</p>
+    <button type="button" class="primary-btn public-reviews-toggle"
+            data-ratings-module="QRShield AI"
+            aria-expanded="false">
+        View QRShield AI Ratings
+    </button>
+    <div class="public-reviews-panel" data-ratings-panel hidden>
+        <div data-ratings-reviews aria-live="polite"></div>
+    </div>
+</section>
+
 <footer>
     <div class="watermark">
         <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
@@ -212,6 +227,9 @@
         status.textContent = "Camera stopped.";
     });
 
+    // Do not submit an empty/unreadable camera frame. Keep scanning until
+    // the QR library successfully decodes an actual QR payload.
+
     async function startCamera() {
         if (!window.QrScanner) {
             preview.style.display = "block";
@@ -245,17 +263,15 @@
 
                     processing = true;
                     status.textContent =
-                        "QR detected. Preparing analysis...";
+                        "QR detected. Cropping and enlarging the detected area...";
 
                     if (scanner) scanner.stop();
 
-                    // Pass the scanner's decoded text directly to Flask.
                     qrPayload.value = qrText;
 
-                    // The decoded payload is authoritative; frame is optional.
                     const submitScan = () => {
                         status.textContent =
-                            "QR detected. Submitting for analysis...";
+                            "QR decoded. Submitting evidence for analysis...";
                         stopScanner();
                         cameraForm.requestSubmit();
                     };
@@ -265,18 +281,55 @@
                         return;
                     }
 
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
+                    const frameWidth = video.videoWidth;
+                    const frameHeight = video.videoHeight;
+                    let crop = {
+                        x: 0, y: 0, width: frameWidth, height: frameHeight
+                    };
+
+                    const points = result && Array.isArray(result.cornerPoints)
+                        ? result.cornerPoints
+                        : [];
+
+                    if (points.length >= 4) {
+                        const xs = points.map(point => point.x);
+                        const ys = points.map(point => point.y);
+                        const left = Math.max(0, Math.floor(Math.min(...xs)));
+                        const top = Math.max(0, Math.floor(Math.min(...ys)));
+                        const right = Math.min(frameWidth, Math.ceil(Math.max(...xs)));
+                        const bottom = Math.min(frameHeight, Math.ceil(Math.max(...ys)));
+                        const margin = Math.round(Math.max(right - left, bottom - top) * 0.18);
+                        const cropLeft = Math.max(0, left - margin);
+                        const cropTop = Math.max(0, top - margin);
+                        const cropRight = Math.min(frameWidth, right + margin);
+                        const cropBottom = Math.min(frameHeight, bottom + margin);
+
+                        if (cropRight > cropLeft && cropBottom > cropTop) {
+                            crop = {
+                                x: cropLeft,
+                                y: cropTop,
+                                width: cropRight - cropLeft,
+                                height: cropBottom - cropTop
+                            };
+                        }
+                    }
+
+                    const scale = 2;
+                    canvas.width = Math.max(1, Math.round(crop.width * scale));
+                    canvas.height = Math.max(1, Math.round(crop.height * scale));
 
                     const context = canvas.getContext("2d");
-
                     if (!context) {
                         submitScan();
                         return;
                     }
 
+                    context.imageSmoothingEnabled = true;
+                    context.imageSmoothingQuality = "high";
                     context.drawImage(
-                        video, 0, 0, canvas.width, canvas.height
+                        video,
+                        crop.x, crop.y, crop.width, crop.height,
+                        0, 0, canvas.width, canvas.height
                     );
 
                     canvas.toBlob(blob => {
@@ -287,31 +340,28 @@
                                     "camera_qr_scan.jpg",
                                     { type: "image/jpeg" }
                                 );
-
                                 const transfer = new DataTransfer();
                                 transfer.items.add(file);
                                 cameraFile.files = transfer.files;
                             } catch (error) {
-                                console.warn(
-                                    "Optional camera frame unavailable:", error
-                                );
+                                console.warn("Camera frame unavailable:", error);
                             }
                         }
-
                         submitScan();
-                    }, "image/jpeg", 0.92);
+                    }, "image/jpeg", 0.94);
                 },
                 {
                     preferredCamera: "environment",
-                    maxScansPerSecond: 15,
+                    maxScansPerSecond: 20,
                     returnDetailedScanResult: true,
                     highlightScanRegion: true,
                     highlightCodeOutline: true,
                     calculateScanRegion: videoElement => {
                         const width = videoElement.videoWidth || 640;
                         const height = videoElement.videoHeight || 480;
+                        // Smaller scan frames reduce processing time for faster detection.
                         const scale = Math.min(
-                            1, 800 / Math.max(width, height)
+                            1, 1600 / Math.max(width, height)
                         );
 
                         return {
@@ -334,7 +384,8 @@
             await scanner.start();
 
             status.textContent =
-                "Point your camera at a QR code. Scanning automatically...";
+                "Scanning is active. Keep the QR fully visible, steady, and in focus; analysis starts as soon as it is decoded.";
+
         } catch (error) {
             console.error("Camera startup error:", error);
             stopScanner();
@@ -373,5 +424,92 @@
     });
 })();
 </script>
+
+<script>
+(() => {
+    const button = document.querySelector("[data-ratings-module]");
+    const panel = document.querySelector("[data-ratings-panel]");
+    const moduleName = button?.dataset.ratingsModule;
+    const summary = document.querySelector("[data-ratings-summary]");
+    const reviews = document.querySelector("[data-ratings-reviews]");
+    if (!button || !panel || !moduleName) return;
+
+    const stars = rating => "★".repeat(rating) + "☆".repeat(5 - rating);
+    const safeText = value => String(value ?? "");
+
+    async function loadReviews() {
+        reviews.replaceChildren();
+        const loading = document.createElement("p");
+        loading.className = "public-reviews-message";
+        loading.textContent = "Loading public reviews...";
+        reviews.appendChild(loading);
+
+        try {
+            const response = await fetch("/public-ratings?module=" + encodeURIComponent(moduleName));
+            if (!response.ok) throw new Error("Could not load reviews");
+            const data = await response.json();
+
+            summary.textContent = data.average === null
+                ? "No ratings yet"
+                : `${data.average}/5 · ${data.count} public rating${data.count === 1 ? "" : "s"}`;
+            const starDisplay = document.querySelector(".public-rating-stars");
+            if (starDisplay) {
+                const roundedAverage = data.average === null ? 0 : Math.round(data.average);
+                starDisplay.textContent = stars(roundedAverage);
+            }
+
+            reviews.replaceChildren();
+            if (!data.reviews.length) {
+                const empty = document.createElement("p");
+                empty.className = "public-reviews-message";
+                empty.textContent = "No public reviews have been submitted for this module yet.";
+                reviews.appendChild(empty);
+                return;
+            }
+
+            data.reviews.forEach(item => {
+                const card = document.createElement("article");
+                card.className = "public-review-item";
+
+                const rating = document.createElement("div");
+                rating.className = "review-stars";
+                rating.textContent = stars(Number(item.rating));
+
+                const verdict = document.createElement("div");
+                verdict.textContent = "Analysis verdict: " + safeText(item.verdict);
+
+                card.append(rating, verdict);
+
+                if (item.feedback_text.trim()) {
+                    const text = document.createElement("p");
+                    text.textContent = item.feedback_text;
+                    card.appendChild(text);
+                }
+
+                const date = document.createElement("div");
+                date.className = "public-review-date";
+                date.textContent = safeText(item.created_at);
+                card.appendChild(date);
+                reviews.appendChild(card);
+            });
+        } catch (_) {
+            reviews.replaceChildren();
+            const error = document.createElement("p");
+            error.className = "public-reviews-message";
+            error.textContent = "Public reviews could not be loaded. Please try again.";
+            reviews.appendChild(error);
+        }
+    }
+
+    button.addEventListener("click", async () => {
+        const willOpen = panel.hidden;
+        panel.hidden = !willOpen;
+        button.setAttribute("aria-expanded", String(willOpen));
+        button.textContent = willOpen ? "Hide " + moduleName + " Ratings" : "View " + moduleName + " Ratings";
+        if (willOpen) await loadReviews();
+    });
+})();
+</script>
+
 </body>
 </html>

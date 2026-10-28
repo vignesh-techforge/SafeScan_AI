@@ -1642,3 +1642,33 @@ footer p {
         height: 270px;
     }
 }
+
+/* Public ratings and reviews */
+.public-rating-summary,
+.public-reviews-panel {
+    margin: 28px auto;
+    padding: 22px;
+    max-width: 900px;
+    border: 1px solid rgba(128,128,128,.3);
+    border-radius: 12px;
+}
+.public-rating-summary { text-align: center; }
+.public-rating-summary h2 { margin-top: 0; }
+.public-rating-stars, .review-stars {
+    color: #f5b301;
+    letter-spacing: 2px;
+    font-size: 1.2rem;
+}
+.public-rating-meta { opacity: .8; margin-top: 8px; }
+.public-reviews-toggle { margin-top: 18px; cursor: pointer; }
+.public-reviews-panel[hidden] { display: none; }
+.public-review-item {
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(128,128,128,.22);
+    overflow-wrap: anywhere;
+}
+.public-review-item:last-child { border-bottom: 0; }
+.public-review-item p { white-space: pre-wrap; }
+.public-review-date { font-size: .88rem; opacity: .7; }
+.public-reviews-message { opacity: .8; }
+

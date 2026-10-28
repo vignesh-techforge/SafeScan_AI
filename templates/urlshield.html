@@ -1,69 +1,115 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>URLShield AI | SafeScan AI</title>
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-<nav class="navbar">
-    <div class="brand">
-        <div class="right-logo">
-            <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
-                 alt="SafeScan AI Logo">
-        </div>
-        <div>
-            <h2>SafeScan AI</h2>
-            <span>Digital Threat Intelligence</span>
-        </div>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>URLShield AI | SafeScan AI</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head><body>
+<nav class="navbar"><div class="brand"><div class="right-logo"><img src="{{ url_for('static', filename='images/safescan-logo.png') }}" alt="SafeScan AI Logo"></div><div><h2>SafeScan AI</h2><span>Digital Threat Intelligence</span></div></div>
+<div class="nav-links"><a href="/">Home</a><a href="/mailguard">MailGuard</a><a href="/qrshield">QRShield</a></div></nav>
+<section class="analysis-page"><div class="analysis-header"><span class="section-label">URLSHIELD AI</span><h1>Investigate a Website</h1>
+<p>Enter a URL to investigate its domain identity, destination, redirects, HTTPS certificate and available technical evidence.</p></div>
+<form method="POST" class="analysis-form"><label>Website URL</label><input type="text" name="url" placeholder="https://example.com" required>
+<button type="submit" class="primary-btn">Investigate URL →</button></form></section>
+
+<section class="public-rating-summary">
+    <h2>Public Ratings &amp; Reviews</h2>
+    <div class="public-rating-stars" aria-label="Public rating stars">★★★★★</div>
+    <p data-ratings-summary class="public-rating-meta">Loading public rating...</p>
+    <button type="button" class="primary-btn public-reviews-toggle"
+            data-ratings-module="URLShield AI"
+            aria-expanded="false">
+        View URLShield AI Ratings
+    </button>
+    <div class="public-reviews-panel" data-ratings-panel hidden>
+        <div data-ratings-reviews aria-live="polite"></div>
     </div>
-    <div class="nav-links">
-        <a href="/">Home</a>
-        <a href="/mailguard">MailGuard</a>
-        <a href="/qrshield">QRShield</a>
-    </div>
-</nav>
-<section class="analysis-page">
-    <div class="analysis-header">
-        <span class="section-label">
-            URLSHIELD AI
-        </span>
-        <h1>
-            Investigate a Website
-        </h1>
-        <p>
-            Enter a URL to investigate its domain identity,
-            destination, redirects, HTTPS certificate and
-            available technical evidence.
-        </p>
-    </div>
-    <form method="POST"
-          class="analysis-form">
-        <label>
-            Website URL
-        </label>
-        <input
-            type="text"
-            name="url"
-            placeholder="https://example.com"
-            required>
-        <button type="submit"
-                class="primary-btn">
-            Investigate URL →
-        </button>
-    </form>
 </section>
-<footer>
-    <div class="watermark">
-            <img src="{{ url_for('static', filename='images/safescan-logo.png') }}"
-                 alt="SafeScan AI ">
-             <span>SAFESCAN AI</span>
-        </div>
-    <p>
-        Evidence-Based Digital Threat Intelligence
-    </p>
-</footer>
-</body>
-</html>
+
+<footer><div class="watermark"><img src="{{ url_for('static', filename='images/safescan-logo.png') }}" alt="SafeScan AI"><span>SAFESCAN AI</span></div><p>Evidence-Based Digital Threat Intelligence</p></footer>
+
+<script>
+(() => {
+    const button = document.querySelector("[data-ratings-module]");
+    const panel = document.querySelector("[data-ratings-panel]");
+    const moduleName = button?.dataset.ratingsModule;
+    const summary = document.querySelector("[data-ratings-summary]");
+    const reviews = document.querySelector("[data-ratings-reviews]");
+    if (!button || !panel || !moduleName) return;
+
+    const stars = rating => "★".repeat(rating) + "☆".repeat(5 - rating);
+    const safeText = value => String(value ?? "");
+
+    async function loadReviews() {
+        reviews.replaceChildren();
+        const loading = document.createElement("p");
+        loading.className = "public-reviews-message";
+        loading.textContent = "Loading public reviews...";
+        reviews.appendChild(loading);
+
+        try {
+            const response = await fetch("/public-ratings?module=" + encodeURIComponent(moduleName));
+            if (!response.ok) throw new Error("Could not load reviews");
+            const data = await response.json();
+
+            summary.textContent = data.average === null
+                ? "No ratings yet"
+                : `${data.average}/5 · ${data.count} public rating${data.count === 1 ? "" : "s"}`;
+            const starDisplay = document.querySelector(".public-rating-stars");
+            if (starDisplay) {
+                const roundedAverage = data.average === null ? 0 : Math.round(data.average);
+                starDisplay.textContent = stars(roundedAverage);
+            }
+
+            reviews.replaceChildren();
+            if (!data.reviews.length) {
+                const empty = document.createElement("p");
+                empty.className = "public-reviews-message";
+                empty.textContent = "No public reviews have been submitted for this module yet.";
+                reviews.appendChild(empty);
+                return;
+            }
+
+            data.reviews.forEach(item => {
+                const card = document.createElement("article");
+                card.className = "public-review-item";
+
+                const rating = document.createElement("div");
+                rating.className = "review-stars";
+                rating.textContent = stars(Number(item.rating));
+
+                const verdict = document.createElement("div");
+                verdict.textContent = "Analysis verdict: " + safeText(item.verdict);
+
+                card.append(rating, verdict);
+
+                if (item.feedback_text.trim()) {
+                    const text = document.createElement("p");
+                    text.textContent = item.feedback_text;
+                    card.appendChild(text);
+                }
+
+                const date = document.createElement("div");
+                date.className = "public-review-date";
+                date.textContent = safeText(item.created_at);
+                card.appendChild(date);
+                reviews.appendChild(card);
+            });
+        } catch (_) {
+            reviews.replaceChildren();
+            const error = document.createElement("p");
+            error.className = "public-reviews-message";
+            error.textContent = "Public reviews could not be loaded. Please try again.";
+            reviews.appendChild(error);
+        }
+    }
+
+    button.addEventListener("click", async () => {
+        const willOpen = panel.hidden;
+        panel.hidden = !willOpen;
+        button.setAttribute("aria-expanded", String(willOpen));
+        button.textContent = willOpen ? "Hide " + moduleName + " Ratings" : "View " + moduleName + " Ratings";
+        if (willOpen) await loadReviews();
+    });
+})();
+</script>
+</body></html>

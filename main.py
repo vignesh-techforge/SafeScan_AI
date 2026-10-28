@@ -14,6 +14,7 @@ import ssl
 import ipaddress
 import requests
 from bs4 import BeautifulSoup
+from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv()
 
@@ -231,7 +232,7 @@ def dns_query(name, record_type):
                 "Accept": "application/dns-json",
                 **REQUEST_HEADERS
             },
-            timeout=7
+            timeout=4
         )
 
         if response.ok:
@@ -251,10 +252,16 @@ def dns_query(name, record_type):
 
 def get_dns_information(domain):
     metadata = {}
+    record_types = ("A", "AAAA", "MX", "NS", "TXT", "CNAME")
 
-    for record_type in ("A", "AAAA", "MX", "NS", "TXT", "CNAME"):
-        values = dns_query(domain, record_type)
+    # DNS record lookups are independent, so fetch them concurrently.
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        results = list(executor.map(
+            lambda record_type: (record_type, dns_query(domain, record_type)),
+            record_types
+        ))
 
+    for record_type, values in results:
         metadata["DNS " + record_type] = (
             ", ".join(values) if values else "Not Available"
         )
@@ -728,12 +735,18 @@ def investigate_url(url):
             "verdict": "Unable to Verify"
         }
 
-    metadata.update(get_domain_creation_information(domain))
-    metadata.update(get_dns_information(domain))
-    metadata.update(get_ip_information(domain))
+    # These checks are independent; run them together to reduce total wait time.
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        domain_future = executor.submit(get_domain_creation_information, domain)
+        dns_future = executor.submit(get_dns_information, domain)
+        ip_future = executor.submit(get_ip_information, domain)
+        ssl_future = executor.submit(get_ssl_information, domain)
 
-    ssl_info = get_ssl_information(domain)
-    metadata.update(ssl_info)
+        metadata.update(domain_future.result())
+        metadata.update(dns_future.result())
+        metadata.update(ip_future.result())
+        ssl_info = ssl_future.result()
+        metadata.update(ssl_info)
 
     if ssl_info["SSL Available"]:
         findings.append("A TLS connection was established for the domain.")
@@ -1158,16 +1171,33 @@ def investigate_message(message):
         "verdict": "Unable to Verify"
     }
 
+def get_rating_summary(module=None):
+    with sqlite3.connect(DATABASE, timeout=15) as connection:
+        if module:
+            row = connection.execute(
+                "SELECT COUNT(*), AVG(rating) FROM feedback WHERE module = ?",
+                (module,)
+            ).fetchone()
+        else:
+            row = connection.execute(
+                "SELECT COUNT(*), AVG(rating) FROM feedback"
+            ).fetchone()
+
+    return {
+        "count": row[0] or 0,
+        "average": round(row[1], 1) if row[1] is not None else None
+    }
 
 @app.route("/")
 def home():
-    return render_template("index.html")
-
+    return render_template(
+        "index.html",
+        overall_ratings=get_rating_summary()
+    )
 
 @app.route("/modules")
 def modules():
     return render_template("modules.html")
-
 
 @app.route("/submit-feedback", methods=["POST"])
 def submit_feedback():
@@ -1332,6 +1362,83 @@ def mailguard():
     return render_template("mailguard.html")
 
 
+def decode_qr_image(image, cv2):
+    """Try multiple image variants to decode QR codes with central logos/noisy frames."""
+    detector = cv2.QRCodeDetector()
+    variants = [image]
+
+    try:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape) == 3 else image.copy()
+        variants.append(gray)
+
+        height, width = gray.shape[:2]
+        if max(width, height) < 1800:
+            scale = min(3.0, 1800 / max(width, height))
+            enlarged = cv2.resize(
+                gray, None, fx=scale, fy=scale,
+                interpolation=cv2.INTER_CUBIC
+            )
+            variants.append(enlarged)
+
+        blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+        variants.append(cv2.addWeighted(gray, 1.7, blurred, -0.7, 0))
+
+        _, otsu = cv2.threshold(
+            gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        )
+        variants.append(otsu)
+        variants.append(cv2.bitwise_not(otsu))
+
+        adaptive = cv2.adaptiveThreshold(
+            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY, 31, 5
+        )
+        variants.append(adaptive)
+        variants.append(cv2.bitwise_not(adaptive))
+    except cv2.error:
+        pass
+
+    seen = set()
+    for candidate in variants:
+        try:
+            # Multiple-code decoding can work better on frames containing overlays.
+            if hasattr(detector, "detectAndDecodeMulti"):
+                result = detector.detectAndDecodeMulti(candidate)
+                if result and result[0]:
+                    for value in result[1]:
+                        if value and value.strip():
+                            return value.strip()
+
+            decoded, points, _ = detector.detectAndDecode(candidate)
+            if decoded and decoded.strip():
+                return decoded.strip()
+
+            # A second detector pass on the inverse sometimes helps low-contrast QR images.
+            if candidate.ndim == 2:
+                inverse = cv2.bitwise_not(candidate)
+                key = (inverse.shape, inverse.tobytes()[:64])
+                if key not in seen:
+                    seen.add(key)
+                    decoded, points, _ = detector.detectAndDecode(inverse)
+                    if decoded and decoded.strip():
+                        return decoded.strip()
+        except (cv2.error, ValueError):
+            continue
+
+    # Optional fallback: pyzbar may not be installed or its native zbar library may be missing.
+    try:
+        from pyzbar.pyzbar import decode as zbar_decode
+        for candidate in variants:
+            for item in zbar_decode(candidate):
+                value = item.data.decode("utf-8", errors="replace").strip()
+                if value:
+                    return value
+    except Exception:
+        pass
+
+    return ""
+
+
 @app.route("/qrshield", methods=["GET", "POST"])
 def qrshield():
     if request.method == "POST":
@@ -1353,7 +1460,6 @@ def qrshield():
         try:
             import cv2
 
-            detector = cv2.QRCodeDetector()
             image = cv2.imread(file_path)
 
             if image is None:
@@ -1362,13 +1468,14 @@ def qrshield():
             decoded_data = request.form.get("qr_payload", "").strip()
 
             if not decoded_data:
-                decoded_data, points, _ = detector.detectAndDecode(image)
+                decoded_data = decode_qr_image(image, cv2)
 
             if not decoded_data:
                 analysis = {
                     "metadata": {
                         "File Name": filename,
-                        "QR Status": "No readable QR payload detected"
+                        "QR Status": "No readable QR payload detected",
+                        "QR Code Type": "Unknown QR Type"
                     },
                     "findings": [
                         "The QR image was received, but no readable QR content was detected."
@@ -1398,6 +1505,7 @@ def qrshield():
 
             if re.match(r"^https?://", decoded_data, re.I):
                 metadata["Content Type"] = "Website URL"
+                metadata["QR Code Type"] = "Website URL QR"
                 findings.append("The QR code contains an external website URL.")
 
                 url_analysis = investigate_url(decoded_data)
@@ -1422,6 +1530,7 @@ def qrshield():
                 email = decoded_data[7:]
 
                 metadata["Content Type"] = "Email Address"
+                metadata["QR Code Type"] = "Email QR"
                 metadata["Email Destination"] = email
 
                 findings.append("The QR code contains an email destination.")
@@ -1436,6 +1545,7 @@ def qrshield():
                 phone = decoded_data[4:]
 
                 metadata["Content Type"] = "Phone Number"
+                metadata["QR Code Type"] = "Phone Number QR"
                 metadata["Phone Number"] = phone
 
                 findings.append("The QR code contains a telephone number.")
@@ -1448,26 +1558,38 @@ def qrshield():
 
             elif decoded_data.lower().startswith("upi://"):
                 metadata["Content Type"] = "UPI Payment"
+                metadata["QR Code Type"] = "UPI Payment QR"
 
                 parsed_upi = urlparse(decoded_data)
                 upi_data = parse_qs(parsed_upi.query)
 
                 metadata["UPI ID"] = upi_data.get("pa", ["Not Available"])[0]
-                metadata["Payee Name"] = upi_data.get("pn", ["Not Available"])[0]
+                metadata["Payee Name"] = unquote(upi_data.get("pn", ["Not Available"])[0])
                 metadata["Amount"] = upi_data.get("am", ["Not Available"])[0]
                 metadata["Currency"] = upi_data.get("cu", ["Not Available"])[0]
 
+                # UPI payloads do not reliably identify which payment app generated the QR.
+                metadata["Payment App Identification"] = (
+                    "Not confirmed from the decoded UPI payload"
+                )
+
                 findings.append("The QR code contains a UPI payment destination.")
                 findings.append("Payment destination information was extracted from the QR payload.")
+                findings.append(
+                    "The payment app brand cannot be reliably identified from this UPI payload alone."
+                )
 
                 verdict = "Requires Verification"
                 reason = (
-                    "The payment destination was decoded, but the QR code "
-                    "alone cannot independently prove the recipient's legitimacy."
+                    "This is a UPI payment QR. The decoded payload does not "
+                    "reliably confirm whether it was generated by Google Pay, "
+                    "PhonePe, or another UPI app. The QR code alone also cannot "
+                    "independently prove the recipient's legitimacy."
                 )
 
             elif decoded_data.startswith("WIFI:"):
                 metadata["Content Type"] = "Wi-Fi Configuration"
+                metadata["QR Code Type"] = "Wi-Fi QR"
 
                 wifi_fields = {}
 
@@ -1490,16 +1612,18 @@ def qrshield():
 
             else:
                 metadata["Content Type"] = "Plain Text / Other Data"
+                metadata["QR Code Type"] = "Text / Other Data QR"
 
                 findings.append(
                     "The QR code contains text or another data format "
                     "rather than a directly recognized external destination."
                 )
 
-                verdict = "No External Threat Identified"
+                verdict = "Unable to Verify"
                 reason = (
-                    "The QR code was successfully decoded and no external "
-                    "website destination was detected."
+                    "The QR payload was decoded, but its content type is not "
+                    "recognized by the current analysis rules. No security "
+                    "conclusion can be made from the available evidence."
                 )
 
             save_analysis(
